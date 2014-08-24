@@ -82,7 +82,7 @@ static void get_abs_min_max(int fd)
         mt_range_y[1] = absinfo.maximum;
     }
 
-    mt_switch_xy = (mt_range_x[1] > mt_range_y[1]);
+    mt_switch_xy = 0;
     if(mt_switch_xy)
     {
         int tmp[2];
