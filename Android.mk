@@ -81,6 +81,15 @@ ifeq ($(MR_INPUT_TYPE),)
 endif
 LOCAL_SRC_FILES += input_$(MR_INPUT_TYPE).c
 
+ifeq ($(MR_SWITCH_TOUCH_XY),false)
+    MR_SWITCH_TOUCH_XY := 0
+else ifeq ($(MR_SWITCH_TOUCH_XY),true)
+    MR_SWITCH_TOUCH_XY := 1
+else
+    MR_SWITCH_TOUCH_XY := 2
+endif
+LOCAL_CFLAGS += -DMR_SWITCH_TOUCH_XY=$(MR_SWITCH_TOUCH_XY)
+
 ifeq ($(DEVICE_RESOLUTION),)
     $(info DEVICE_RESOLUTION was not specified)
 else ifneq ($(wildcard $(multirom_local_path)/themes/multirom_ui_$(DEVICE_RESOLUTION).c),)

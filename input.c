@@ -82,7 +82,11 @@ static void get_abs_min_max(int fd)
         mt_range_y[1] = absinfo.maximum;
     }
 
-    mt_switch_xy = 0;
+    if(MR_SWITCH_TOUCH_XY == 2)
+        mt_switch_xy = (mt_range_x[1] > mt_range_y[1]);
+    else
+        mt_switch_xy = MR_SWITCH_TOUCH_XY;
+    
     if(mt_switch_xy)
     {
         int tmp[2];
