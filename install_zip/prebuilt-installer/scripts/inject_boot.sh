@@ -77,6 +77,10 @@ cd /tmp/boot/sbin/rd && find . | cpio -o -H newc > ../ramdisk.cpio
 rm -rf /tmp/boot/sbin/rd
 cd /tmp/boot
 
+# replace recovery ramdisk
+rm /tmp/boot/sbin/ramdisk-recovery.cpio
+cp /tmp/multirom/ramdisk-recovery.cpio /tmp/boot/sbin/
+
 case $rd_cmpr in
     CMPR_GZIP)
         find . | $BUSYBOX cpio -o -H newc | $BUSYBOX gzip > "../initrd.img"

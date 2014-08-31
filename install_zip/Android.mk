@@ -29,6 +29,7 @@ $(MULTIROM_ZIP_TARGET): multirom trampoline fw_mounter signapk bbootimg
 	cp -a $(TARGET_ROOT_OUT)/multirom $(MULTIROM_INST_DIR)/multirom/
 	cp -a $(TARGET_ROOT_OUT)/trampoline $(MULTIROM_INST_DIR)/multirom/
 	cp -a $(TARGET_ROOT_OUT)/fw_mounter $(MULTIROM_INST_DIR)/multirom/
+	cp -a $(PRODUCT_OUT)/ramdisk-recovery.cpio $(MULTIROM_INST_DIR)/multirom/
 	mkdir $(MULTIROM_INST_DIR)/multirom/infos
 	if [ -n "$(MR_INFOS)" ]; then cp -r $(PWD)/$(MR_INFOS)/* $(MULTIROM_INST_DIR)/multirom/infos/; fi
 	cp -a $(TARGET_OUT_OPTIONAL_EXECUTABLES)/bbootimg $(MULTIROM_INST_DIR)/scripts/
