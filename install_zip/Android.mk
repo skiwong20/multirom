@@ -12,7 +12,7 @@ ifeq ($(MR_FSTAB),)
     $(info MR_FSTAB not defined in device files)
 endif
 
-$(MULTIROM_ZIP_TARGET): multirom trampoline fw_mounter signapk bbootimg
+$(MULTIROM_ZIP_TARGET): multirom trampoline fw_mounter signapk bbootimg bootimage
 	@echo
 	@echo
 	@echo "A crowdfunding campaign for MultiROM took place in 2013. These people got perk 'The Tenth':"
