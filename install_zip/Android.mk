@@ -33,6 +33,7 @@ $(MULTIROM_ZIP_TARGET): multirom trampoline fw_mounter signapk bbootimg bootimag
 	mkdir $(MULTIROM_INST_DIR)/multirom/infos
 	if [ -n "$(MR_INFOS)" ]; then cp -r $(PWD)/$(MR_INFOS)/* $(MULTIROM_INST_DIR)/multirom/infos/; fi
 	cp -a $(TARGET_OUT_OPTIONAL_EXECUTABLES)/bbootimg $(MULTIROM_INST_DIR)/scripts/
+	date +"%Y%m%d" > $(MULTIROM_INST_DIR)/multirom/recovery_ver
 	cp $(PWD)/$(MR_FSTAB) $(MULTIROM_INST_DIR)/multirom/mrom.fstab
 	$(install_zip_path)/extract_boot_dev.sh $(PWD)/$(MR_FSTAB) $(MULTIROM_INST_DIR)/scripts/bootdev
 	echo $(MR_RD_ADDR) > $(MULTIROM_INST_DIR)/scripts/rd_addr
