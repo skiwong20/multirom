@@ -12,7 +12,7 @@ ifeq ($(MR_FSTAB),)
     $(info MR_FSTAB not defined in device files)
 endif
 
-$(MULTIROM_ZIP_TARGET): multirom trampoline fw_mounter signapk bbootimg
+$(MULTIROM_ZIP_TARGET): multirom trampoline fw_mounter signapk bbootimg bootimage
 	@echo
 	@echo
 	@echo "A crowdfunding campaign for MultiROM took place in 2013. These people got perk 'The Tenth':"
@@ -29,9 +29,11 @@ $(MULTIROM_ZIP_TARGET): multirom trampoline fw_mounter signapk bbootimg
 	cp -a $(TARGET_ROOT_OUT)/multirom $(MULTIROM_INST_DIR)/multirom/
 	cp -a $(TARGET_ROOT_OUT)/trampoline $(MULTIROM_INST_DIR)/multirom/
 	cp -a $(TARGET_ROOT_OUT)/fw_mounter $(MULTIROM_INST_DIR)/multirom/
+	cp -a $(PRODUCT_OUT)/ramdisk-recovery.cpio $(MULTIROM_INST_DIR)/multirom/
 	mkdir $(MULTIROM_INST_DIR)/multirom/infos
 	if [ -n "$(MR_INFOS)" ]; then cp -r $(PWD)/$(MR_INFOS)/* $(MULTIROM_INST_DIR)/multirom/infos/; fi
 	cp -a $(TARGET_OUT_OPTIONAL_EXECUTABLES)/bbootimg $(MULTIROM_INST_DIR)/scripts/
+	date +"%Y%m%d" > $(MULTIROM_INST_DIR)/multirom/recovery_ver
 	cp $(PWD)/$(MR_FSTAB) $(MULTIROM_INST_DIR)/multirom/mrom.fstab
 	$(install_zip_path)/extract_boot_dev.sh $(PWD)/$(MR_FSTAB) $(MULTIROM_INST_DIR)/scripts/bootdev
 	echo $(MR_RD_ADDR) > $(MULTIROM_INST_DIR)/scripts/rd_addr

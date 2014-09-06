@@ -4,6 +4,7 @@ LZ4="/tmp/multirom/lz4"
 BOOT_DEV="$(cat /tmp/bootdev)"
 RD_ADDR="$(cat /tmp/rd_addr)"
 USE_MROM_FSTAB="$(cat /tmp/use_mrom_fstab)"
+RECOVERY_VER="$(cat /tmp/multirom/recovery_ver)"
 CMPR_GZIP=0
 CMPR_LZ4=1
 
@@ -44,32 +45,42 @@ if [ rd_cmpr == -1 ] || [ ! -f /tmp/boot/init ] ; then
     return 1
 fi
 
+# Extract ramdisk.cpio
+mkdir /tmp/boot/sbin/rd
+cd /tmp/boot/sbin/rd && cat ../ramdisk.cpio | cpio -i;cd /
+
 # copy trampoline
-if [ ! -e /tmp/boot/main_init ] ; then
-    mv /tmp/boot/init /tmp/boot/main_init
+if [ ! -e /tmp/boot/sbin/rd/main_init ] ; then
+    mv /tmp/boot/sbin/rd/init /tmp/boot/sbin/rd/main_init
 fi
-cp /tmp/multirom/trampoline /tmp/boot/init
-chmod 750 /tmp/boot/init
+cp /tmp/multirom/trampoline /tmp/boot/sbin/rd/init
+chmod 750 /tmp/boot/sbin/rd/init
 
 # create ueventd and watchdogd symlink
 # older versions were changing these to ../main_init, we need to change it back
-if [ -L /tmp/boot/sbin/ueventd ] ; then
-    ln -sf ../init /tmp/boot/sbin/ueventd
+if [ -L /tmp/boot/sbin/rd/sbin/ueventd ] ; then
+    ln -sf ../init /tmp/boot/sbin/rd/sbin/ueventd
 fi
-if [ -L /tmp/boot/sbin/watchdogd ] ; then
-    ln -sf ../init /tmp/boot/sbin/watchdogd
+if [ -L /tmp/boot/sbin/rd/sbin/watchdogd ] ; then
+    ln -sf ../init /tmp/boot/sbin/rd/sbin/watchdogd
 fi
 
 # copy MultiROM's fstab if needed, remove old one if disabled
 if [ "$USE_MROM_FSTAB" == "true" ]; then
     echo "Using MultiROM's fstab"
-    cp /tmp/multirom/mrom.fstab /tmp/boot/mrom.fstab
-elif [ -e /tmp/boot/mrom.fstab ] ; then
-    rm /tmp/boot/mrom.fstab
+    cp /tmp/multirom/mrom.fstab /tmp/boot/sbin/rd/mrom.fstab
+elif [ -e /tmp/boot/sbin/rd/mrom.fstab ] ; then
+    rm /tmp/boot/sbin/rd/mrom.fstab
 fi
 
 # pack the image again
+cd /tmp/boot/sbin/rd && find . | cpio -o -H newc > ../ramdisk.cpio
+rm -rf /tmp/boot/sbin/rd
 cd /tmp/boot
+
+# replace recovery ramdisk
+rm /tmp/boot/sbin/ramdisk-recovery.cpio
+cp /tmp/multirom/ramdisk-recovery.cpio /tmp/boot/sbin/
 
 case $rd_cmpr in
     CMPR_GZIP)
@@ -99,6 +110,8 @@ if [ ! -e "/tmp/newboot.img" ] ; then
     echo "Failed to inject boot.img!"
     return 1
 fi
+
+/tmp/bbootimg -u /tmp/newboot.img -c "name=mrom$RECOVERY_VER"
 
 echo "Writing new boot.img..."
 dd bs=4096 if=/tmp/newboot.img of=$BOOT_DEV
