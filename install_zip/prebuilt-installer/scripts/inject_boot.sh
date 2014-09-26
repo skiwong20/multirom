@@ -5,7 +5,6 @@ LZMA="/tmp/multirom/lzma"
 BOOT_DEV="$(cat /tmp/bootdev)"
 RD_ADDR="$(cat /tmp/rd_addr)"
 USE_MROM_FSTAB="$(cat /tmp/use_mrom_fstab)"
-RECOVERY_VER="$(cat /tmp/multirom/recovery_ver)"
 CMPR_GZIP=0
 CMPR_LZ4=1
 CMPR_LZMA=2
@@ -119,8 +118,6 @@ if [ ! -e "/tmp/newboot.img" ] ; then
     echo "Failed to inject boot.img!"
     return 1
 fi
-
-/tmp/bbootimg -u /tmp/newboot.img -c "name=mrom$RECOVERY_VER"
 
 echo "Writing new boot.img..."
 dd bs=4096 if=/tmp/newboot.img of=$BOOT_DEV
