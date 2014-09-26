@@ -87,6 +87,10 @@ cd /tmp/boot
 rm /tmp/boot/sbin/ramdisk-recovery.cpio
 cp /tmp/multirom/ramdisk-recovery.cpio /tmp/boot/sbin/
 
+# replace extract_elf_ramdisk tool to fix FOTA loading issues
+rm /tmp/boot/sbin/extract_elf_ramdisk
+cp /tmp/multirom/extract_elf_ramdisk /tmp/boot/sbin/
+
 case $rd_cmpr in
     CMPR_GZIP)
         find . | $BUSYBOX cpio -o -H newc | $BUSYBOX gzip > "../initrd.img"
