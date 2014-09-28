@@ -26,6 +26,7 @@
 #include <string.h>
 #include <linux/fb.h>
 #include <poll.h>
+#include <errno.h>
 
 #include "framebuffer.h"
 #include "log.h"
@@ -71,13 +72,14 @@ struct fb_qcom_overlay_data {
 
 #define VSYNC_PREFIX "VSYNC="
 
+#ifdef MR_QCOM_OVERLAY_USE_VSYNC
 static int fb_qcom_vsync_enable(struct fb_qcom_vsync *vs, int enable)
 {
     clock_gettime(CLOCK_REALTIME, &vs->time);
 
     if(vs->enabled != enable)
     {
-        if(vs->fb_fd <= 0 || ioctl(vs->fb_fd, MSMFB_OVERLAY_VSYNC_CTRL, &enable) < 0)
+        if(vs->fb_fd < 0 || ioctl(vs->fb_fd, MSMFB_OVERLAY_VSYNC_CTRL, &enable) < 0)
         {
             ERROR("Failed to set vsync status\n");
             return -1;
@@ -110,14 +112,14 @@ static void *fb_qcom_vsync_thread_work(void *data)
 
     while(vs->_run_thread)
     {
-        err = poll(&pfd, 1, 100);
+        err = poll(&pfd, 1, 10);
 
         if(pfd.revents & POLLPRI)
         {
-            len = pread(pfd.fd, data, sizeof(data), 0);
+            len = pread(pfd.fd, buff, sizeof(buff), 0);
             if(len > 0)
             {
-                if(strncmp(data, VSYNC_PREFIX, strlen(VSYNC_PREFIX)) == 0)
+                if(strncmp(buff, VSYNC_PREFIX, strlen(VSYNC_PREFIX)) == 0)
                     pthread_cond_signal(&vs->cond);
             }
             else
@@ -132,32 +134,38 @@ static void *fb_qcom_vsync_thread_work(void *data)
     close(fd);
     return NULL;
 }
+#endif // #ifdef MR_QCOM_OVERLAY_USE_VSYNC
 
 static struct fb_qcom_vsync *fb_qcom_vsync_init(int fb_fd)
 {
     struct fb_qcom_vsync *res = mzalloc(sizeof(struct fb_qcom_vsync));
     res->fb_fd = fb_fd;
+#ifdef MR_QCOM_OVERLAY_USE_VSYNC
     res->_run_thread = 1;
     pthread_mutex_init(&res->mutex, NULL);
     pthread_cond_init(&res->cond, NULL);
-
     pthread_create(&res->thread, NULL, &fb_qcom_vsync_thread_work, res);
+#endif
     return res;
 }
 
 static void fb_qcom_vsync_destroy(struct fb_qcom_vsync *vs)
 {
+#ifdef MR_QCOM_OVERLAY_USE_VSYNC
     pthread_mutex_lock(&vs->mutex);
     vs->_run_thread = 0;
     pthread_mutex_unlock(&vs->mutex);
     pthread_join(vs->thread, NULL);
     pthread_mutex_destroy(&vs->mutex);
     pthread_cond_destroy(&vs->cond);
+#endif
+
     free(vs);
 }
 
 static int fb_qcom_vsync_wait(struct fb_qcom_vsync *vs)
 {
+#ifdef MR_QCOM_OVERLAY_USE_VSYNC
     int res;
     struct timespec ts;
 
@@ -183,6 +191,10 @@ static int fb_qcom_vsync_wait(struct fb_qcom_vsync *vs)
     pthread_mutex_unlock(&vs->mutex);
 
     return res;
+#else
+    usleep(10000);
+    return 0;
+#endif
 }
 
 
