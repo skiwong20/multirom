@@ -5,7 +5,6 @@ LZMA="/tmp/multirom/lzma"
 BOOT_DEV="$(cat /tmp/bootdev)"
 RD_ADDR="$(cat /tmp/rd_addr)"
 USE_MROM_FSTAB="$(cat /tmp/use_mrom_fstab)"
-RECOVERY_VER="$(cat /tmp/multirom/recovery_ver)"
 CMPR_GZIP=0
 CMPR_LZ4=1
 CMPR_LZMA=2
@@ -88,6 +87,10 @@ cd /tmp/boot
 rm /tmp/boot/sbin/ramdisk-recovery.cpio
 cp /tmp/multirom/ramdisk-recovery.cpio /tmp/boot/sbin/
 
+# replace extract_elf_ramdisk tool to fix FOTA loading issues
+rm /tmp/boot/sbin/extract_elf_ramdisk
+cp /tmp/multirom/extract_elf_ramdisk /tmp/boot/sbin/
+
 case $rd_cmpr in
     CMPR_GZIP)
         find . | $BUSYBOX cpio -o -H newc | $BUSYBOX gzip > "../initrd.img"
@@ -119,8 +122,6 @@ if [ ! -e "/tmp/newboot.img" ] ; then
     echo "Failed to inject boot.img!"
     return 1
 fi
-
-/tmp/bbootimg -u /tmp/newboot.img -c "name=mrom$RECOVERY_VER"
 
 echo "Writing new boot.img..."
 dd bs=4096 if=/tmp/newboot.img of=$BOOT_DEV
