@@ -90,6 +90,7 @@ cp /tmp/multirom/ramdisk-recovery.cpio /tmp/boot/sbin/
 # replace extract_elf_ramdisk tool to fix FOTA loading issues
 rm /tmp/boot/sbin/extract_elf_ramdisk
 cp /tmp/multirom/extract_elf_ramdisk /tmp/boot/sbin/
+chmod +x /tmp/boot/sbin/extract_elf_ramdisk
 
 case $rd_cmpr in
     CMPR_GZIP)
