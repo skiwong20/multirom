@@ -960,8 +960,12 @@ int multirom_prepare_for_boot(struct multirom_status *s, struct multirom_rom *to
     switch(type)
     {
         case ROM_DEFAULT:
+        {
+            mount("/realdata", "/data", "", MS_BIND, "");
             rom_quirks_on_android_mounted_fs(to_boot);
+            umount("/data");
             break;
+        }
         case ROM_LINUX_INTERNAL:
         case ROM_LINUX_USB:
             break;
@@ -1274,7 +1278,14 @@ int multirom_process_android_fstab(char *fstab_name, int has_fw, struct fstab_pa
         goto exit;
 
     if(fstab_disable_part(tab, "/system") || fstab_disable_part(tab, "/data") || fstab_disable_part(tab, "/cache"))
-        goto exit;
+    {
+#if MR_DEVICE_HOOKS >= 4
+        if(!mrom_hook_allow_incomplete_fstab())
+#endif
+        {
+            goto exit;
+        }
+    }
 
     if(has_fw)
     {
@@ -1287,7 +1298,7 @@ int multirom_process_android_fstab(char *fstab_name, int has_fw, struct fstab_pa
     }
 
     // Android considers empty fstab invalid
-    if(tab->count == 3 + has_fw)
+    if(tab->count <= 3 + has_fw)
     {
         INFO("fstab would be empty, adding dummy line\n");
         fstab_add_part(tab, "tmpfs", "/dummy_tmpfs", "tmpfs", "ro,nosuid,nodev", "defaults");
@@ -1353,15 +1364,28 @@ int multirom_create_media_link(void)
 
     if(api_level >= 17)
     {
-        FILE *f = fopen(LAYOUT_VERSION, "w");
-        if(!f)
+        char buf[16];
+        buf[0] = 0;
+
+        FILE *f = fopen(LAYOUT_VERSION, "r");
+        const int rewrite = (!f || !fgets(buf, sizeof(buf), f) || atoi(buf) < 2);
+
+        if(f)
+            fclose(f);
+
+        if(rewrite)
         {
-            ERROR("Failed to create .layout_version!\n");
-            return -1;
+            f = fopen(LAYOUT_VERSION, "w");
+            if(!f)
+            {
+                ERROR("Failed to create .layout_version!\n");
+                return -1;
+            }
+
+            fputc('2', f);
+            fclose(f);
+            chmod(LAYOUT_VERSION, 0600);
         }
-        fputs("2", f);
-        fclose(f);
-        chmod(LAYOUT_VERSION, 0600);
     }
 
     return 0;
@@ -2200,7 +2224,7 @@ int multirom_update_partitions(struct multirom_status *s)
 
         tok = strrchr(line, '/')+1;
         name = strndup(tok, strchr(tok, ':') - tok);
-        if(strncmp(name, "mmcblk", 6) == 0 || strncmp(name, "dm-", 3) == 0) // ignore internal nand
+        if(strncmp(name, "mmcblk0", 7) == 0 || strncmp(name, "dm-", 3) == 0) // ignore internal nand
         {
             free(name);
             goto next_itr;
