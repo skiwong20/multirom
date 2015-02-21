@@ -1291,8 +1291,11 @@ int multirom_process_android_fstab(char *fstab_name, int has_fw, struct fstab_pa
     if(!tab)
         goto exit;
 
-    const int disable_res = fstab_disable_part(tab, "/system") + fstab_disable_part(tab, "/data") + fstab_disable_part(tab, "/cache");
-    if(disable_res != 0)
+    int disable_sys = fstab_disable_parts(tab, "/system");
+    int disable_data = fstab_disable_parts(tab, "/data");
+    int disable_cache = fstab_disable_parts(tab, "/cache");
+
+    if(disable_sys < 0 || disable_data < 0 || disable_cache < 0)
     {
 #if MR_DEVICE_HOOKS >= 4
         if(!mrom_hook_allow_incomplete_fstab())
@@ -1304,7 +1307,7 @@ int multirom_process_android_fstab(char *fstab_name, int has_fw, struct fstab_pa
 
     if(has_fw)
     {
-        struct fstab_part *p = fstab_find_by_path(tab, "/firmware");
+        struct fstab_part *p = fstab_find_first_by_path(tab, "/firmware");
         if(p)
         {
             *fw_part = fstab_clone_part(p);
@@ -1397,7 +1400,7 @@ int multirom_create_media_link(void)
                 return -1;
             }
 
-            fputc('2', f);
+            fputc(api_level > 19 ? '3' : '2', f);
             fclose(f);
             chmod(LAYOUT_VERSION, 0600);
         }
@@ -1545,7 +1548,7 @@ int multirom_get_bootloader_cmdline(struct multirom_status *s, char *str, size_t
             *c = ' ';
 
     // Remove the part from boot.img
-    boot = fstab_find_by_path(s->fstab, "/boot");
+    boot = fstab_find_first_by_path(s->fstab, "/boot");
     if(boot && libbootimg_load_header(&hdr, boot->device) >= 0)
     {
         l = (char*)hdr.cmdline;
@@ -2029,7 +2032,11 @@ int multirom_replace_aliases_cmdline(char **s, struct rom_info *i, struct multir
 
     struct fstab_part *data_part = NULL;
     if(!rom->partition)
-        data_part = fstab_find_by_path(status->fstab, "/data");
+    {
+        // FIXME: might have wrong fs type, because of those "multi-fs" bullshit fstabs
+        // with multiple entries for /data
+        data_part = fstab_find_first_by_path(status->fstab, "/data");
+    }
 
     char *buff = mzalloc(4096);
 
@@ -2338,20 +2345,23 @@ void *multirom_usb_refresh_thread_work(void *status)
 
     // stat.st_ctime is defined as unsigned long instead
     // of time_t in android
-    unsigned long last_change = 0;
+    unsigned long last_ctime = 0;
+    unsigned long last_ctime_nsec = 0;
 
     while(run_usb_refresh)
     {
         if(timer <= 50)
         {
-            if(stat("/dev/block", &info) >= 0 && info.st_ctime > last_change)
+            if (stat("/dev/block", &info) >= 0 &&
+                (info.st_ctime != last_ctime || info.st_ctime_nsec != last_ctime_nsec))
             {
                 multirom_update_partitions((struct multirom_status*)status);
 
                 if(usb_refresh_handler)
                     (*usb_refresh_handler)();
 
-                last_change = info.st_ctime;
+                last_ctime = info.st_ctime;
+                last_ctime_nsec = info.st_ctime_nsec;
             }
             timer = 500;
         }
