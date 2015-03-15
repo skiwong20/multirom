@@ -49,6 +49,13 @@ static int copy_rd_files(const char *path, const char *busybox_path)
 {
     char buf[256];
 
+    if (access(TMP_RD_UNPACKED_DIR"/sbin/ramdisk.cpio", F_OK) < 0)
+    {
+        mr_system("busybox mv /tmp/mrom_rd /tmp/real_rd");
+        mr_system("busybox mkdir /tmp/mrom_rd");
+        mr_system("busybox cd /tmp/mrom_rd && busybox cat ../real_rd/sbin/ramdisk.cpio | busybox cpio -i");
+    }
+
     if (access(TMP_RD_UNPACKED_DIR"/main_init", F_OK) < 0 &&
         rename(TMP_RD_UNPACKED_DIR"/init", TMP_RD_UNPACKED_DIR"/main_init") < 0)
     {
@@ -143,6 +150,13 @@ static int inject_rd(const char *path)
         goto fail;
 
     // Pack initrd again
+    if (access("/tmp/real_rd/sbin/ramdisk.cpio", F_OK) < 0)
+    {
+        mr_system("busybox cd /tmp/mrom_rd && busybox find . | cpio -o -H newc > ../real_rd/sbin/ramdisk.cpio");
+        remove_dir(TMP_RD_UNPACKED_DIR);
+        mr_system("busybox mv /tmp/real_rd /tmp/mrom_rd");
+    }
+
     switch(type)
     {
         case RD_GZIP:
