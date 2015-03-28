@@ -51,6 +51,7 @@ static int copy_rd_files(const char *path, const char *busybox_path)
 
     if (access(TMP_RD_UNPACKED_DIR"/sbin/ramdisk.cpio", F_OK) < 0)
     {
+        INFO("Combined ramdisk found - unpacking it...\n");
         mr_system("busybox mv /tmp/mrom_rd /tmp/real_rd");
         mr_system("busybox mkdir /tmp/mrom_rd");
         mr_system("busybox cd /tmp/mrom_rd && busybox cat ../real_rd/sbin/ramdisk.cpio | busybox cpio -i");
@@ -70,9 +71,14 @@ static int copy_rd_files(const char *path, const char *busybox_path)
         return -1;
     }
     chmod(TMP_RD_UNPACKED_DIR"/init", 0750);
+    
+    INFO("Moved init to main_init and copied trampoline to init.\n");
 
+    INFO("Removing uevented in sbin...\n");
     remove(TMP_RD_UNPACKED_DIR"/sbin/ueventd");
+    INFO("Removing watchdogd in sbin...\n");
     remove(TMP_RD_UNPACKED_DIR"/sbin/watchdogd");
+    INFO("Symlinking stuff\n");
     symlink("../main_init", TMP_RD_UNPACKED_DIR"/sbin/ueventd");
     symlink("../main_init", TMP_RD_UNPACKED_DIR"/sbin/watchdogd");
 
@@ -115,6 +121,7 @@ static int inject_rd(const char *path)
     mkdir(TMP_RD_UNPACKED_DIR, 0755);
 
     // Decompress initrd
+    INFO("Decompressing initrd\n");
     int type;
     char buff[256];
     char busybox_path[256];
@@ -152,6 +159,7 @@ static int inject_rd(const char *path)
     // Pack initrd again
     if (access("/tmp/real_rd/sbin/ramdisk.cpio", F_OK) < 0)
     {
+        INFO("Found combined ramdisk - repacking!\n");
         mr_system("busybox cd /tmp/mrom_rd && busybox find . | cpio -o -H newc > ../real_rd/sbin/ramdisk.cpio");
         remove_dir(TMP_RD_UNPACKED_DIR);
         mr_system("busybox mv /tmp/real_rd /tmp/mrom_rd");
