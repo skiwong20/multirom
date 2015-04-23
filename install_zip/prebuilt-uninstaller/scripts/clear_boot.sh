@@ -74,6 +74,9 @@ if [ -e /tmp/boot/sbin/rd/mrom.fstab ] ; then
     rm /tmp/boot/sbin/rd/mrom.fstab
 fi
 
+# Remove encryption files
+rm -rf /tmp/boot/mrom_enc
+
 # pack the image again
 cd /tmp/boot/sbin/rd && find . | cpio -o -H newc > ../ramdisk.cpio
 rm -rf /tmp/boot/sbin/rd
